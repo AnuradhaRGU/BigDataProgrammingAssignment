@@ -1,0 +1,45 @@
+docker container prune
+
+docker run -it -p 8100:8088 -p 53800:50070 --name Assignment1 -v D:\BigDataProgram\BigDataAnalytics\Assignment\Quection2.1_2.2\ProjectResource:/resource -d suhothayan/hadoop-spark-pig-hive:2.9.2
+
+docker exec -it Assignment1 bash
+sudo apt-get install unzip
+
+cd resource
+hdfs dfs -put stackapps.com stackapps.com 
+
+
+
+yarn jar Airbnb/target/Airbnb_Rental.jar com.airbnb.mr.RentalCount stackapps.com/comments /output/RentalCount
+
+yarn jar Airbnb/target/Airbnb_Ne.jar com.airbnb.mr.NeighbourhoodGroupCount stackapps.com/comments /output/Neghood
+
+
+hdfs dfs -copyToLocal /output/RentalCount/part-r-00000  /resource/1_map_reduce_avilaibilty_365.csv
+
+hdfs dfs -copyToLocal /output/Neghood/part-r-00000  /resource/Nood_rentals_neighbourhood_group.csv
+
+
+hdfs dfs -cat /output/RentalCount/part-r-00000 
+
+hdfs dfs -rm  /output/RentalCount/part-r-00000 
+hdfs dfs -rm  /output/RentalCount/totalerrors-m-00000
+hdfs dfs -rm  /output/RentalCount/_SUCCESS
+hdfs dfs -rm  /output/RentalCount/clean-m-00000
+hdfs dfs -rm  /output/RentalCount/totalerrors-r-00000
+hdfs dfs -rmdir /output/RentalCount
+hdfs dfs -rmdir /output 
+
+hdfs dfs -cat /output/Neghood/part-r-00000 
+
+hdfs dfs -rm  /output/Neghood/part-r-00000 
+hdfs dfs -rm  /output/Neghood/totalerrors-m-00000
+hdfs dfs -rm  /output/Neghood/_SUCCESS
+hdfs dfs -rm  /output/Neghood/clean-m-00000
+hdfs dfs -rm  /output/Neghood/totalerrors-r-00000
+hdfs dfs -rmdir /output/Neghood
+hdfs dfs -rmdir /output 
+
+
+
+

@@ -1,0 +1,168 @@
+docker run -it --name zeppelin -p 8999:8080 -v D:/BigDataProgram/BigDataAnalytics/Assignment/Quection2.3_3.0/data:/data apache/zeppelin:0.8.1
+
+====================================2.3.1========================================================
+%pyspark  
+import pyspark.sql.functions as func
+from pyspark.sql.types import *
+
+df = spark.read.csv("/data/listingsnew.csv", header=True)
+df = df.withColumn("price", df["price"].cast(DoubleType()))
+df.createOrReplaceTempView("airbnb")
+#df.printSchema()
+
+sqlDF = spark.sql("SELECT (Count(*) * 100/ (Select Count(distinct host_name) From airbnb)) As Precentage From (SELECT Count(distinct host_name),host_name FROM airbnb Group by host_name  HAVING Count(host_name) >1)")
+sqlDF=sqlDF.withColumn("Precentage", func.round(sqlDF["Precentage"],2))
+sqlDF.coalesce(1).write.mode("append").json("/data/output/1_precentage_more_than_1_property")
+
+
+sqlDF.show(15000)
+
+
+==================================2.3.2==============================================================
+
+%pyspark
+
+import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt2
+from pyspark.sql.functions import month
+import pandas as pd
+import numpy as np
+import datetime
+from matplotlib.ticker import FuncFormatter
+import calendar
+import datetime
+
+%matplotlib inline
+
+#############################Bar Plot For Monthly Reviews ############################################################
+
+df = spark.read.csv("/data/listingsnew.csv", header=True)
+df =df.withColumn("last_review",month(df["last_review"]))
+df.createOrReplaceTempView("airbnb")
+sqlDF = spark.sql("SELECT * FROM (SELECT last_review as Last_Review_Month,sum(number_of_reviews) as NumberOfReviews FROM airbnb where last_review is not null group by last_review order by last_review)")
+
+
+sqlDF.coalesce(1).write.mode("append").json("/data/output/2_rentals_reviewed_over_time_json")
+
+
+xmonths=[]
+yReviews=[]
+
+
+monthlist = sqlDF.rdd.map(lambda p: p.Last_Review_Month).collect()
+for month in monthlist:
+     xmonths.append(calendar.month_abbr[month])
+
+reviewlist = sqlDF.rdd.map(lambda p: p.NumberOfReviews).collect()
+for review in reviewlist:
+     yReviews.append(review)
+ 
+
+fig, ax = plt.subplots()
+index = np.arange(12)
+bar_width = 0.8
+opacity = 0.5
+
+rects1 = plt.bar(index, yReviews, bar_width,
+alpha=opacity,
+color='b',
+label='Reviews')
+
+plt.xlabel('Months') #xlabel
+plt.ylabel('Reviews') #y alable
+plt.title('Monthly Analysis for Reviews') #Heading 
+plt.xticks(index, xmonths)
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+###############################################################################
+
+###############Histrogram Creation############################################
+
+df2 = spark.read.csv("/data/listingsnew.csv", header=True)
+df2.createOrReplaceTempView("airbnbHistro")
+sqlDF1 = spark.sql("SELECT last_review FROM airbnbHistro where last_review is not null")
+monthlistval = sqlDF1.rdd.map(lambda p: p.last_review).collect()
+dtm = lambda x: int(x[5:7])
+months = list(map(dtm, monthlistval))
+
+plt2.title('Histrogram of Monthly Granularity')
+plt2.hist(months, bins=[1,2,3,4,5,6,7,8,9,10,11,12],color = "firebrick")
+
+##########################################################################
+
+
+==================================2.3.3==============================================================
+
+%pyspark
+from pyspark.sql.types import *
+
+df = spark.read.csv("/data/listingsnew.csv", header=True)
+df = df.withColumn("availability_365", df["availability_365"].cast(IntegerType()))
+df = df.withColumn("price", df["price"].cast(DoubleType()))
+df.createOrReplaceTempView("airbnb")
+sqlDF = spark.sql("SELECT neighbourhood as neighbourhood,Count(availability_365) as 365AvailableCount ,((sum(price)*100)/(Select count(*) from airbnb)) as Average_prices_for_nabourhood   FROM airbnb where availability_365=365 and price is not NULL  group by neighbourhood order by Average_prices_for_nabourhood desc Limit 5")
+
+sqlDF=sqlDF.withColumn("Average_prices_for_nabourhood", func.round(sqlDF["Average_prices_for_nabourhood"],2))
+sqlDF.show(8000)
+sqlDF.write.format("com.databricks.spark.csv").save("/data/output/3_Spartk_rentals_that_are_available_all_365.csv")
+
+
+============================== 3 =========================================================
+
+%pyspark
+from pyspark.ml.feature import VectorAssembler
+from pyspark.ml.regression import LinearRegression
+from pyspark.ml.regression import RandomForestRegressor
+from pyspark.ml import Pipeline
+from pyspark.ml.evaluation import RegressionEvaluator
+from pyspark.sql import functions as f
+from pyspark.ml.feature import VectorIndexer
+
+company_df = sqlContext.read.format("com.databricks.spark.csv").options(header="true", inferschema="true").load("/data/listingsnew.csv")
+company_df=company_df.withColumn("neighbourhood_group_number", f.when(f.col("neighbourhood_group") == "North Region",0)
+                                 .when(f.col("neighbourhood_group") == "Central Region",1)
+                                 .when(f.col("neighbourhood_group") == "East Region",2)
+                                 .when(f.col("neighbourhood_group") == "North-East Region",3)
+                                 .when(f.col("neighbourhood_group") == "West Region",4)
+                                 .otherwise(5))
+
+vectorAssembler = VectorAssembler(inputCols = ["neighbourhood_group_number", "latitude","longitude"], outputCol = "features")
+tcompany_df = vectorAssembler.transform(company_df)
+tcompany_df = tcompany_df.select(["features", "neighbourhood_group_number"])
+#tcompany_df.show(3)
+
+featureIndexer =VectorIndexer(inputCol="features", outputCol="indexedFeatures", maxCategories=5).fit(tcompany_df)
+rf = RandomForestRegressor(featuresCol="indexedFeatures",labelCol="neighbourhood_group_number")
+
+# Split data into training (80%) and test (20%)
+training, test = tcompany_df.randomSplit([0.8, 0.2], seed=11)
+training.cache()
+
+
+pipeline = Pipeline(stages=[featureIndexer, rf])
+
+model = pipeline.fit(training)
+
+# Make predictions.
+predictions = model.transform(test)
+
+# Select example rows to display.
+newDataFream=predictions.select("prediction", "neighbourhood_group_number", "features")
+newDataFream=newDataFream.withColumn("neighbourhood_group_number", f.when(f.col("neighbourhood_group_number") == 0,"North Region")
+                                 .when(f.col("neighbourhood_group_number") == 1,"Central Region")
+                                 .when(f.col("neighbourhood_group_number") == 2,"East Region")
+                                 .when(f.col("neighbourhood_group_number") == 3,"North-East Region")
+                                 .when(f.col("neighbourhood_group_number") == 4,"West Region"))
+newDataFream.show(20)                                 
+
+
+# Select (prediction, true label) and compute test error
+evaluator = RegressionEvaluator(labelCol="neighbourhood_group_number", predictionCol="prediction", metricName="rmse")
+rmse = evaluator.evaluate(predictions)
+print("Root Mean Squared Error (RMSE) on test data = %g" % rmse)
+
+rfModel = model.stages[1]
+print(rfModel)
+

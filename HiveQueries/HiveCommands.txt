@@ -1,0 +1,35 @@
+docker run -it -p 8100:8088 -p 53800:50070 --name Assignment1 -v D:\BigDataProgram\BigDataAnalytics\Assignment\Quection2.1_2.2\ProjectResource:/resource -d suhothayan/hadoop-spark-pig-hive:2.9.2
+
+docker exec -it Assignment1 bash
+
+hdfs dfs -put stackapps.com stackapps.com 
+
+
+hdfs dfs -mkdir /hiveinput
+hdfs dfs -put stackapps.com/comments/listingsnew.csv /hiveinput/
+hdfs dfs -ls /
+
+hive 
+
+CREATE SCHEMA IF NOT EXISTS bnb;
+CREATE EXTERNAL TABLE IF NOT EXISTS bnb.airbnb_csv_table
+(id STRING,name STRING,host_id STRING,host_name STRING,neighbourhood_group STRING,neighbourhood STRING,latitude STRING,longitude STRING,room_type STRING,price FLOAT,minimum_nights STRING,number_of_reviews STRING,last_review STRING,reviews_per_month STRING,calculated_host_listings_count STRING,availability_365 STRING)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LOCATION '/hiveinput/';
+
+set hive.cli.print.header=true;
+
+1. select neighbourhood_group As NeighbourhoodGroup,round(avg(price),2) As Average from airbnb_csv_table where room_type='Private room' group by neighbourhood_group
+2. select neighbourhood As Neighbourhood,round(avg(price),2) as AveragePrice from airbnb_csv_table where room_type='Private room'  group by neighbourhood  sort by averageprice desc LIMIT 0,10
+3 select room_type as RoomType,price as Price,name As Name from (select room_type,  price , name, ROW_NUMBER() over ( partition by room_type order by price) as rn from airbnb_csv_table where price > 0) t  where rn <= 5 and room_type is not null 
+
+
+INSERT OVERWRITE DIRECTORY '/hiveout/average'  ROW FORMAT DELIMITED FIELDS TERMINATED BY ','  (select neighbourhood_group As NeighbourhoodGroup,round(avg(price),2) As Average from airbnb_csv_table where room_type='Private room' group by neighbourhood_group);
+INSERT OVERWRITE DIRECTORY '/hiveout/averagetopten'  ROW FORMAT DELIMITED FIELDS TERMINATED BY ','  (select neighbourhood As Neighbourhood,round(avg(price),2) as AveragePrice from airbnb_csv_table where room_type='Private room'  group by neighbourhood  sort by averageprice desc LIMIT 0,10);
+INSERT OVERWRITE DIRECTORY '/hiveout/minimumprice'  ROW FORMAT DELIMITED FIELDS TERMINATED BY ','  (select room_type as RoomType,price as Price,name As Name from (select room_type,  price , name, ROW_NUMBER() over ( partition by room_type order by price) as rn from airbnb_csv_table where price > 0) t  where rn <= 5 and room_type is not null);
+
+
+hdfs dfs -copyToLocal /hiveout/average/000000_0 /resource/1_Hive_averagePriceroom_ngb.csv
+hdfs dfs -copyToLocal /hiveout/averagetopten/000000_0 /resource/2_Hive_Top_ten_negb.csv
+hdfs dfs -copyToLocal /hiveout/minimumprice/000000_0 /resource/3_Hive_5_lowersprice.csv

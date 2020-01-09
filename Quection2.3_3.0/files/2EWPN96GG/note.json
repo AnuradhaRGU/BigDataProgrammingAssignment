@@ -1,0 +1,909 @@
+{
+  "paragraphs": [
+    {
+      "text": "%md \n# Estimator, Transformer, and Param",
+      "user": "anonymous",
+      "dateUpdated": "2019-12-20 20:25:41.809",
+      "config": {
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/markdown",
+        "results": [
+          {
+            "graph": {
+              "mode": "table",
+              "height": 300.0,
+              "optionOpen": false,
+              "keys": [],
+              "values": [],
+              "groups": [],
+              "scatter": {}
+            }
+          }
+        ],
+        "enabled": true,
+        "editorSetting": {
+          "language": "markdown",
+          "editOnDblClick": true
+        }
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "HTML",
+            "data": "\u003cdiv class\u003d\"markdown-body\"\u003e\n\u003ch1\u003eEstimator, Transformer, and Param\u003c/h1\u003e\n\u003c/div\u003e"
+          }
+        ]
+      },
+      "apps": [],
+      "jobName": "paragraph_1576873541808_-1527085048",
+      "id": "20161129-012735_1377582462",
+      "dateCreated": "2019-12-20 20:25:41.808",
+      "status": "READY",
+      "errorMessage": "",
+      "progressUpdateIntervalMs": 500
+    },
+    {
+      "text": "%pyspark\n\nfrom pyspark.ml.linalg import Vectors\nfrom pyspark.ml.classification import LogisticRegression\n\n# Prepare training data from a list of (label, features) tuples.\ntraining \u003d spark.createDataFrame([\n    (1.0, Vectors.dense([0.0, 1.1, 0.1])),\n    (0.0, Vectors.dense([2.0, 1.0, -1.0])),\n    (0.0, Vectors.dense([2.0, 1.3, 1.0])),\n    (1.0, Vectors.dense([0.0, 1.2, -0.5]))], [\"label\", \"features\"])\n\n# Create a LogisticRegression instance. This instance is an Estimator.\nlr \u003d LogisticRegression(maxIter\u003d10, regParam\u003d0.01)\n# Print out the parameters, documentation, and any default values.\nprint \"LogisticRegression parameters:\\n\" + lr.explainParams() + \"\\n\"\n\n# Learn a LogisticRegression model. This uses the parameters stored in lr.\nmodel1 \u003d lr.fit(training)\n\n# Since model1 is a Model (i.e., a transformer produced by an Estimator),\n# we can view the parameters it used during fit().\n# This prints the parameter (name: value) pairs, where names are unique IDs for this\n# LogisticRegression instance.\nprint \"Model 1 was fit using parameters: \"\nprint model1.extractParamMap()\n\n# We may alternatively specify parameters using a Python dictionary as a paramMap\nparamMap \u003d {lr.maxIter: 20}\nparamMap[lr.maxIter] \u003d 30  # Specify 1 Param, overwriting the original maxIter.\nparamMap.update({lr.regParam: 0.1, lr.threshold: 0.55})  # Specify multiple Params.\n\n# You can combine paramMaps, which are python dictionaries.\nparamMap2 \u003d {lr.probabilityCol: \"myProbability\"}  # Change output column name\nparamMapCombined \u003d paramMap.copy()\nparamMapCombined.update(paramMap2)\n\n# Now learn a new model using the paramMapCombined parameters.\n# paramMapCombined overrides all parameters set earlier via lr.set* methods.\nmodel2 \u003d lr.fit(training, paramMapCombined)\nprint \"Model 2 was fit using parameters: \"\nprint model2.extractParamMap()\n\n# Prepare test data\ntest \u003d spark.createDataFrame([\n    (1.0, Vectors.dense([-1.0, 1.5, 1.3])),\n    (0.0, Vectors.dense([3.0, 2.0, -0.1])),\n    (1.0, Vectors.dense([0.0, 2.2, -1.5]))], [\"label\", \"features\"])\n\n# Make predictions on test data using the Transformer.transform() method.\n# LogisticRegression.transform will only use the \u0027features\u0027 column.\n# Note that model2.transform() outputs a \"myProbability\" column instead of the usual\n# \u0027probability\u0027 column since we renamed the lr.probabilityCol parameter previously.\nprediction \u003d model2.transform(test)\nselected \u003d prediction.select(\"features\", \"label\", \"myProbability\", \"prediction\")\nfor row in selected.collect():\n    print row",
+      "user": "anonymous",
+      "dateUpdated": "2019-12-20 20:25:41.809",
+      "config": {
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/python",
+        "results": [
+          {
+            "graph": {
+              "mode": "table",
+              "height": 300.0,
+              "optionOpen": false,
+              "keys": [],
+              "values": [],
+              "groups": [],
+              "scatter": {}
+            }
+          }
+        ],
+        "enabled": true,
+        "editorSetting": {
+          "language": "python"
+        }
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "LogisticRegression parameters:\naggregationDepth: suggested depth for treeAggregate (\u003e\u003d 2). (default: 2)\nelasticNetParam: the ElasticNet mixing parameter, in range [0, 1]. For alpha \u003d 0, the penalty is an L2 penalty. For alpha \u003d 1, it is an L1 penalty. (default: 0.0)\nfamily: The name of family which is a description of the label distribution to be used in the model. Supported options: auto, binomial, multinomial (default: auto)\nfeaturesCol: features column name. (default: features)\nfitIntercept: whether to fit an intercept term. (default: True)\nlabelCol: label column name. (default: label)\nmaxIter: max number of iterations (\u003e\u003d 0). (default: 100, current: 10)\npredictionCol: prediction column name. (default: prediction)\nprobabilityCol: Column name for predicted class conditional probabilities. Note: Not all models output well-calibrated probability estimates! These probabilities should be treated as confidences, not precise probabilities. (default: probability)\nrawPredictionCol: raw prediction (a.k.a. confidence) column name. (default: rawPrediction)\nregParam: regularization parameter (\u003e\u003d 0). (default: 0.0, current: 0.01)\nstandardization: whether to standardize the training features before fitting the model. (default: True)\nthreshold: Threshold in binary classification prediction, in range [0, 1]. If threshold and thresholds are both set, they must match.e.g. if threshold is p, then thresholds must be equal to [1-p, p]. (default: 0.5)\nthresholds: Thresholds in multi-class classification to adjust the probability of predicting each class. Array must have length equal to the number of classes, with values \u003e 0, excepting that at most one value may be 0. The class with largest value p/t is predicted, where p is the original probability of that class and t is the class\u0027s threshold. (undefined)\ntol: the convergence tolerance for iterative algorithms (\u003e\u003d 0). (default: 1e-06)\nweightCol: weight column name. If this is not set or empty, we treat all instance weights as 1.0. (undefined)\n\nModel 1 was fit using parameters: \n{}\nModel 2 was fit using parameters: \n{}\nRow(features\u003dDenseVector([-1.0, 1.5, 1.3]), label\u003d1.0, myProbability\u003dDenseVector([0.0571, 0.9429]), prediction\u003d1.0)\nRow(features\u003dDenseVector([3.0, 2.0, -0.1]), label\u003d0.0, myProbability\u003dDenseVector([0.9239, 0.0761]), prediction\u003d0.0)\nRow(features\u003dDenseVector([0.0, 2.2, -1.5]), label\u003d1.0, myProbability\u003dDenseVector([0.1097, 0.8903]), prediction\u003d1.0)\n"
+          }
+        ]
+      },
+      "apps": [],
+      "jobName": "paragraph_1576873541809_170682421",
+      "id": "20161129-012748_52787394",
+      "dateCreated": "2019-12-20 20:25:41.809",
+      "status": "READY",
+      "errorMessage": "",
+      "progressUpdateIntervalMs": 500
+    },
+    {
+      "text": "%md\n\n#Extracting, transforming and selecting features\n\n## CountVectorizer\n",
+      "user": "anonymous",
+      "dateUpdated": "2019-12-20 20:25:41.810",
+      "config": {
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/markdown",
+        "results": [
+          {
+            "graph": {
+              "mode": "table",
+              "height": 300.0,
+              "optionOpen": false,
+              "keys": [],
+              "values": [],
+              "groups": [],
+              "scatter": {}
+            }
+          }
+        ],
+        "enabled": true,
+        "editorSetting": {
+          "language": "markdown",
+          "editOnDblClick": true
+        }
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "HTML",
+            "data": "\u003cdiv class\u003d\"markdown-body\"\u003e\n\u003cp\u003e#Extracting, transforming and selecting features\u003c/p\u003e\n\u003ch2\u003eCountVectorizer\u003c/h2\u003e\n\u003c/div\u003e"
+          }
+        ]
+      },
+      "apps": [],
+      "jobName": "paragraph_1576873541809_413764536",
+      "id": "20161129-013007_1388002982",
+      "dateCreated": "2019-12-20 20:25:41.810",
+      "status": "READY",
+      "errorMessage": "",
+      "progressUpdateIntervalMs": 500
+    },
+    {
+      "text": "%pyspark\n\nfrom pyspark.ml.feature import CountVectorizer\n\n# Input data: Each row is a bag of words with a ID.\ndf \u003d spark.createDataFrame([\n    (0, \"a b c\".split(\" \")),\n    (1, \"a b b c a\".split(\" \"))\n], [\"id\", \"words\"])\n\n# fit a CountVectorizerModel from the corpus.\ncv \u003d CountVectorizer(inputCol\u003d\"words\", outputCol\u003d\"features\", vocabSize\u003d3, minDF\u003d2.0)\nmodel \u003d cv.fit(df)\nresult \u003d model.transform(df)\nresult.show()",
+      "user": "anonymous",
+      "dateUpdated": "2019-12-20 20:25:41.810",
+      "config": {
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/python",
+        "results": [
+          {
+            "graph": {
+              "mode": "table",
+              "height": 300.0,
+              "optionOpen": false,
+              "keys": [],
+              "values": [],
+              "groups": [],
+              "scatter": {}
+            }
+          }
+        ],
+        "enabled": true,
+        "editorSetting": {
+          "language": "python"
+        }
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "+---+---------------+--------------------+\n| id|          words|            features|\n+---+---------------+--------------------+\n|  0|      [a, b, c]|(3,[0,1,2],[1.0,1...|\n|  1|[a, b, b, c, a]|(3,[0,1,2],[2.0,2...|\n+---+---------------+--------------------+\n\n"
+          }
+        ]
+      },
+      "apps": [],
+      "jobName": "paragraph_1576873541810_1133987438",
+      "id": "20161129-013020_1764358722",
+      "dateCreated": "2019-12-20 20:25:41.810",
+      "status": "READY",
+      "errorMessage": "",
+      "progressUpdateIntervalMs": 500
+    },
+    {
+      "text": "%md\n\n## Feature Transformers : Tokenizer",
+      "user": "anonymous",
+      "dateUpdated": "2019-12-20 20:25:41.810",
+      "config": {
+        "editorSetting": {
+          "language": "markdown",
+          "editOnDblClick": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/markdown",
+        "results": {},
+        "graph": {
+          "mode": "table",
+          "height": 300.0,
+          "optionOpen": false,
+          "keys": [],
+          "values": [],
+          "groups": [],
+          "scatter": {}
+        },
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "jobName": "paragraph_1576873541810_-864676333",
+      "id": "20161129-013707_1456126627",
+      "dateCreated": "2019-12-20 20:25:41.810",
+      "status": "READY",
+      "errorMessage": "",
+      "progressUpdateIntervalMs": 500
+    },
+    {
+      "text": "%pyspark \n\nfrom pyspark.ml.feature import Tokenizer, RegexTokenizer\n\nsentenceDataFrame \u003d spark.createDataFrame([\n    (0, \"Hi I heard about Spark\"),\n    (1, \"I wish Java could use case classes\"),\n    (2, \"Logistic,regression,models,are,neat\")\n], [\"label\", \"sentence\"])\ntokenizer \u003d Tokenizer(inputCol\u003d\"sentence\", outputCol\u003d\"words\")\nwordsDataFrame \u003d tokenizer.transform(sentenceDataFrame)\nfor words_label in wordsDataFrame.select(\"words\", \"label\").take(3):\n    print(words_label)\nregexTokenizer \u003d RegexTokenizer(inputCol\u003d\"sentence\", outputCol\u003d\"words\", pattern\u003d\"\\\\W\")\n# alternatively, pattern\u003d\"\\\\w+\", gaps(False)",
+      "user": "anonymous",
+      "dateUpdated": "2019-12-20 20:25:41.811",
+      "config": {
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/python",
+        "results": [
+          {
+            "graph": {
+              "mode": "table",
+              "height": 300.0,
+              "optionOpen": false,
+              "keys": [],
+              "values": [],
+              "groups": [],
+              "scatter": {}
+            }
+          }
+        ],
+        "enabled": true,
+        "editorSetting": {
+          "language": "python"
+        }
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "Row(words\u003d[u\u0027hi\u0027, u\u0027i\u0027, u\u0027heard\u0027, u\u0027about\u0027, u\u0027spark\u0027], label\u003d0)\nRow(words\u003d[u\u0027i\u0027, u\u0027wish\u0027, u\u0027java\u0027, u\u0027could\u0027, u\u0027use\u0027, u\u0027case\u0027, u\u0027classes\u0027], label\u003d1)\nRow(words\u003d[u\u0027logistic,regression,models,are,neat\u0027], label\u003d2)\n"
+          }
+        ]
+      },
+      "apps": [],
+      "jobName": "paragraph_1576873541811_-1288810937",
+      "id": "20161129-013723_581839226",
+      "dateCreated": "2019-12-20 20:25:41.811",
+      "status": "READY",
+      "errorMessage": "",
+      "progressUpdateIntervalMs": 500
+    },
+    {
+      "text": "%md \n## Feature Selectors: VectorSlicer",
+      "user": "anonymous",
+      "dateUpdated": "2019-12-20 20:25:41.811",
+      "config": {
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/markdown",
+        "results": [
+          {
+            "graph": {
+              "mode": "table",
+              "height": 300.0,
+              "optionOpen": false,
+              "keys": [],
+              "values": [],
+              "groups": [],
+              "scatter": {}
+            }
+          }
+        ],
+        "enabled": true,
+        "editorSetting": {
+          "language": "markdown",
+          "editOnDblClick": true
+        }
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "jobName": "paragraph_1576873541811_639639751",
+      "id": "20161129-013842_1827572139",
+      "dateCreated": "2019-12-20 20:25:41.811",
+      "status": "READY",
+      "errorMessage": "",
+      "progressUpdateIntervalMs": 500
+    },
+    {
+      "text": "%pyspark\n\nfrom pyspark.ml.feature import VectorSlicer\nfrom pyspark.ml.linalg import Vectors\nfrom pyspark.sql.types import Row\n\ndf \u003d spark.createDataFrame([\n    Row(userFeatures\u003dVectors.sparse(3, {0: -2.0, 1: 2.3}),),\n    Row(userFeatures\u003dVectors.dense([-2.0, 2.3, 0.0]),)])\n\nslicer \u003d VectorSlicer(inputCol\u003d\"userFeatures\", outputCol\u003d\"features\", indices\u003d[1])\n\noutput \u003d slicer.transform(df)\n\noutput.select(\"userFeatures\", \"features\").show()",
+      "user": "anonymous",
+      "dateUpdated": "2019-12-20 20:25:41.811",
+      "config": {
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/python",
+        "results": [
+          {
+            "graph": {
+              "mode": "table",
+              "height": 300.0,
+              "optionOpen": false,
+              "keys": [],
+              "values": [],
+              "groups": [],
+              "scatter": {}
+            }
+          }
+        ],
+        "enabled": true,
+        "editorSetting": {
+          "language": "python"
+        }
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "+--------------------+-------------+\n|        userFeatures|     features|\n+--------------------+-------------+\n|(3,[0,1],[-2.0,2.3])|(1,[0],[2.3])|\n|      [-2.0,2.3,0.0]|        [2.3]|\n+--------------------+-------------+\n\n"
+          }
+        ]
+      },
+      "apps": [],
+      "jobName": "paragraph_1576873541811_-756726912",
+      "id": "20161129-013858_179930977",
+      "dateCreated": "2019-12-20 20:25:41.811",
+      "status": "READY",
+      "errorMessage": "",
+      "progressUpdateIntervalMs": 500
+    },
+    {
+      "text": "%md\n\n#Classification",
+      "user": "anonymous",
+      "dateUpdated": "2019-12-20 20:25:41.811",
+      "config": {
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/markdown",
+        "results": [
+          {
+            "graph": {
+              "mode": "table",
+              "height": 300.0,
+              "optionOpen": false,
+              "keys": [],
+              "values": [],
+              "groups": [],
+              "scatter": {}
+            }
+          }
+        ],
+        "enabled": true,
+        "editorSetting": {
+          "language": "markdown",
+          "editOnDblClick": true
+        }
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "jobName": "paragraph_1576873541811_-1979267498",
+      "id": "20161129-005933_456191674",
+      "dateCreated": "2019-12-20 20:25:41.811",
+      "status": "READY",
+      "errorMessage": "",
+      "progressUpdateIntervalMs": 500
+    },
+    {
+      "text": "%md\n\n## Logistic regression\nLogistic regression is a popular method to predict a binary response. It is a special case of Generalized Linear models that predicts the probability of the outcome.",
+      "user": "anonymous",
+      "dateUpdated": "2019-12-20 20:25:41.812",
+      "config": {
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/markdown",
+        "results": [
+          {
+            "graph": {
+              "mode": "table",
+              "height": 300.0,
+              "optionOpen": false,
+              "keys": [],
+              "values": [],
+              "groups": [],
+              "scatter": {}
+            }
+          }
+        ],
+        "enabled": true,
+        "editorSetting": {
+          "language": "markdown",
+          "editOnDblClick": true
+        }
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "HTML",
+            "data": "\u003cdiv class\u003d\"markdown-body\"\u003e\n\u003ch2\u003eLogistic regression\u003c/h2\u003e\n\u003cp\u003eLogistic regression is a popular method to predict a binary response. It is a special case of Generalized Linear models that predicts the probability of the outcome.\u003c/p\u003e\n\u003c/div\u003e"
+          }
+        ]
+      },
+      "apps": [],
+      "jobName": "paragraph_1576873541812_-696573548",
+      "id": "20161129-010017_1506647346",
+      "dateCreated": "2019-12-20 20:25:41.812",
+      "status": "READY",
+      "errorMessage": "",
+      "progressUpdateIntervalMs": 500
+    },
+    {
+      "text": "%pyspark \n\n#The following example shows how to train a logistic regression model with elastic net regularization\n\nfrom pyspark.ml.classification import LogisticRegression\n\n# Load training data\ntraining \u003d spark.read.format(\"libsvm\").load(\"/data/mllib/sample_libsvm_data.txt\")\n\nlr \u003d LogisticRegression(maxIter\u003d10, regParam\u003d0.3, elasticNetParam\u003d0.8)\n\n# Fit the model\nlrModel \u003d lr.fit(training)\n\n# Print the coefficients and intercept for logistic regression\nprint(\"Coefficients: \" + str(lrModel.coefficients))\nprint(\"Intercept: \" + str(lrModel.intercept))\n",
+      "user": "anonymous",
+      "dateUpdated": "2019-12-20 20:26:48.328",
+      "config": {
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/python",
+        "results": [
+          {
+            "graph": {
+              "mode": "table",
+              "height": 300.0,
+              "optionOpen": false,
+              "keys": [],
+              "values": [],
+              "groups": [],
+              "scatter": {}
+            }
+          }
+        ],
+        "enabled": true,
+        "editorSetting": {
+          "language": "python",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "fontSize": 9.0
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "ERROR",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\u001b[0;31m\u001b[0m\n\u001b[0;31mAnalysisException\u001b[0mTraceback (most recent call last)\n\u001b[0;32m\u003cipython-input-4-41fbb8fb44ed\u003e\u001b[0m in \u001b[0;36m\u003cmodule\u003e\u001b[0;34m()\u001b[0m\n\u001b[1;32m      4\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m      5\u001b[0m \u001b[0;31m# Load training data\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m----\u003e 6\u001b[0;31m \u001b[0mtraining\u001b[0m \u001b[0;34m\u003d\u001b[0m \u001b[0mspark\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mread\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mformat\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m\"libsvm\"\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mload\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m\"/data/mllib/sample_libsvm_data.txt\"\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m      7\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m      8\u001b[0m \u001b[0mlr\u001b[0m \u001b[0;34m\u003d\u001b[0m \u001b[0mLogisticRegression\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mmaxIter\u001b[0m\u001b[0;34m\u003d\u001b[0m\u001b[0;36m10\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mregParam\u001b[0m\u001b[0;34m\u003d\u001b[0m\u001b[0;36m0.3\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0melasticNetParam\u001b[0m\u001b[0;34m\u003d\u001b[0m\u001b[0;36m0.8\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\n\u001b[0;32m/zeppelin/interpreter/spark/pyspark/pyspark.zip/pyspark/sql/readwriter.py\u001b[0m in \u001b[0;36mload\u001b[0;34m(self, path, format, schema, **options)\u001b[0m\n\u001b[1;32m    157\u001b[0m         \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0moptions\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m**\u001b[0m\u001b[0moptions\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    158\u001b[0m         \u001b[0;32mif\u001b[0m \u001b[0misinstance\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mpath\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mbasestring\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--\u003e 159\u001b[0;31m             \u001b[0;32mreturn\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_df\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_jreader\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mload\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mpath\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    160\u001b[0m         \u001b[0;32melif\u001b[0m \u001b[0mpath\u001b[0m \u001b[0;32mis\u001b[0m \u001b[0;32mnot\u001b[0m \u001b[0mNone\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    161\u001b[0m             \u001b[0;32mif\u001b[0m \u001b[0mtype\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mpath\u001b[0m\u001b[0;34m)\u001b[0m \u001b[0;34m!\u003d\u001b[0m \u001b[0mlist\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\n\u001b[0;32m/zeppelin/interpreter/spark/pyspark/py4j-0.10.4-src.zip/py4j/java_gateway.py\u001b[0m in \u001b[0;36m__call__\u001b[0;34m(self, *args)\u001b[0m\n\u001b[1;32m   1131\u001b[0m         \u001b[0manswer\u001b[0m \u001b[0;34m\u003d\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mgateway_client\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0msend_command\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mcommand\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   1132\u001b[0m         return_value \u003d get_return_value(\n\u001b[0;32m-\u003e 1133\u001b[0;31m             answer, self.gateway_client, self.target_id, self.name)\n\u001b[0m\u001b[1;32m   1134\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   1135\u001b[0m         \u001b[0;32mfor\u001b[0m \u001b[0mtemp_arg\u001b[0m \u001b[0;32min\u001b[0m \u001b[0mtemp_args\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\n\u001b[0;32m/zeppelin/interpreter/spark/pyspark/pyspark.zip/pyspark/sql/utils.py\u001b[0m in \u001b[0;36mdeco\u001b[0;34m(*a, **kw)\u001b[0m\n\u001b[1;32m     67\u001b[0m                                              e.java_exception.getStackTrace()))\n\u001b[1;32m     68\u001b[0m             \u001b[0;32mif\u001b[0m \u001b[0ms\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mstartswith\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m\u0027org.apache.spark.sql.AnalysisException: \u0027\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m---\u003e 69\u001b[0;31m                 \u001b[0;32mraise\u001b[0m \u001b[0mAnalysisException\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0ms\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0msplit\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m\u0027: \u0027\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;36m1\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m[\u001b[0m\u001b[0;36m1\u001b[0m\u001b[0;34m]\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mstackTrace\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m     70\u001b[0m             \u001b[0;32mif\u001b[0m \u001b[0ms\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mstartswith\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m\u0027org.apache.spark.sql.catalyst.analysis\u0027\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m     71\u001b[0m                 \u001b[0;32mraise\u001b[0m \u001b[0mAnalysisException\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0ms\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0msplit\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m\u0027: \u0027\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;36m1\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m[\u001b[0m\u001b[0;36m1\u001b[0m\u001b[0;34m]\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mstackTrace\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\n\u001b[0;31mAnalysisException\u001b[0m: u\u0027Path does not exist: file:/data/mllib/sample_libsvm_data.txt;\u0027"
+          }
+        ]
+      },
+      "apps": [],
+      "jobName": "paragraph_1576873541812_1804182753",
+      "id": "20161129-010106_1160729799",
+      "dateCreated": "2019-12-20 20:25:41.812",
+      "dateStarted": "2019-12-20 20:26:48.461",
+      "dateFinished": "2019-12-20 20:26:53.363",
+      "status": "ERROR",
+      "progressUpdateIntervalMs": 500
+    },
+    {
+      "text": "%md \n#Decision tree classifier\n",
+      "user": "anonymous",
+      "dateUpdated": "2019-12-20 20:25:41.812",
+      "config": {
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/markdown",
+        "results": [
+          {
+            "graph": {
+              "mode": "table",
+              "height": 300.0,
+              "optionOpen": false,
+              "keys": [],
+              "values": [],
+              "groups": [],
+              "scatter": {}
+            }
+          }
+        ],
+        "enabled": true,
+        "editorSetting": {
+          "language": "markdown",
+          "editOnDblClick": true
+        }
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "HTML",
+            "data": "\u003cdiv class\u003d\"markdown-body\"\u003e\n\u003cp\u003e#Decision tree classifier\u003c/p\u003e\n\u003c/div\u003e"
+          }
+        ]
+      },
+      "apps": [],
+      "jobName": "paragraph_1576873541812_-1314270573",
+      "id": "20161129-010330_366107409",
+      "dateCreated": "2019-12-20 20:25:41.812",
+      "status": "READY",
+      "errorMessage": "",
+      "progressUpdateIntervalMs": 500
+    },
+    {
+      "text": "%pyspark\n\nfrom pyspark.ml import Pipeline\nfrom pyspark.ml.classification import DecisionTreeClassifier\nfrom pyspark.ml.feature import StringIndexer, VectorIndexer\nfrom pyspark.ml.evaluation import MulticlassClassificationEvaluator\n\n# Load the data stored in LIBSVM format as a DataFrame.\ndata \u003d spark.read.format(\"libsvm\").load(\"/data/mllib/sample_libsvm_data.txt\")\n\n# Index labels, adding metadata to the label column.\n# Fit on whole dataset to include all labels in index.\nlabelIndexer \u003d StringIndexer(inputCol\u003d\"label\", outputCol\u003d\"indexedLabel\").fit(data)\n# Automatically identify categorical features, and index them.\n# We specify maxCategories so features with \u003e 4 distinct values are treated as continuous.\nfeatureIndexer \u003d\\\n    VectorIndexer(inputCol\u003d\"features\", outputCol\u003d\"indexedFeatures\", maxCategories\u003d4).fit(data)\n\n# Split the data into training and test sets (30% held out for testing)\n(trainingData, testData) \u003d data.randomSplit([0.7, 0.3])\n\n# Train a DecisionTree model.\ndt \u003d DecisionTreeClassifier(labelCol\u003d\"indexedLabel\", featuresCol\u003d\"indexedFeatures\")\n\n# Chain indexers and tree in a Pipeline\npipeline \u003d Pipeline(stages\u003d[labelIndexer, featureIndexer, dt])\n\n# Train model.  This also runs the indexers.\nmodel \u003d pipeline.fit(trainingData)\n\n# Make predictions.\npredictions \u003d model.transform(testData)\n\n# Select example rows to display.\npredictions.select(\"prediction\", \"indexedLabel\", \"features\").show(5)\n\n# Select (prediction, true label) and compute test error\nevaluator \u003d MulticlassClassificationEvaluator(\n    labelCol\u003d\"indexedLabel\", predictionCol\u003d\"prediction\", metricName\u003d\"accuracy\")\naccuracy \u003d evaluator.evaluate(predictions)\nprint(\"Test Error \u003d %g \" % (1.0 - accuracy))\n\ntreeModel \u003d model.stages[2]\n# summary only\nprint(treeModel)",
+      "user": "anonymous",
+      "dateUpdated": "2019-12-20 20:25:41.813",
+      "config": {
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/python",
+        "results": [
+          {
+            "graph": {
+              "mode": "table",
+              "height": 300.0,
+              "optionOpen": false,
+              "keys": [],
+              "values": [],
+              "groups": [],
+              "scatter": {}
+            }
+          }
+        ],
+        "enabled": true,
+        "editorSetting": {
+          "language": "python"
+        }
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "+----------+------------+--------------------+\n|prediction|indexedLabel|            features|\n+----------+------------+--------------------+\n|       1.0|         1.0|(692,[98,99,100,1...|\n|       1.0|         1.0|(692,[124,125,126...|\n|       1.0|         1.0|(692,[124,125,126...|\n|       1.0|         1.0|(692,[124,125,126...|\n|       1.0|         1.0|(692,[126,127,128...|\n+----------+------------+--------------------+\nonly showing top 5 rows\n\nTest Error \u003d 0 \nDecisionTreeClassificationModel (uid\u003dDecisionTreeClassifier_4a9f99cf2da3cd444fcb) of depth 2 with 5 nodes\n"
+          }
+        ]
+      },
+      "apps": [],
+      "jobName": "paragraph_1576873541813_963597590",
+      "id": "20161129-010551_944142688",
+      "dateCreated": "2019-12-20 20:25:41.813",
+      "status": "READY",
+      "errorMessage": "",
+      "progressUpdateIntervalMs": 500
+    },
+    {
+      "text": "%md\n# Regression\n\n## Random forest regression",
+      "user": "anonymous",
+      "dateUpdated": "2019-12-20 20:25:41.813",
+      "config": {
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/markdown",
+        "results": [
+          {
+            "graph": {
+              "mode": "table",
+              "height": 300.0,
+              "optionOpen": false,
+              "keys": [],
+              "values": [],
+              "groups": [],
+              "scatter": {}
+            }
+          }
+        ],
+        "enabled": true,
+        "editorSetting": {
+          "language": "markdown",
+          "editOnDblClick": true
+        }
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "HTML",
+            "data": "\u003cdiv class\u003d\"markdown-body\"\u003e\n\u003ch1\u003eRegression\u003c/h1\u003e\n\u003ch2\u003eRandom forest regression\u003c/h2\u003e\n\u003c/div\u003e"
+          }
+        ]
+      },
+      "apps": [],
+      "jobName": "paragraph_1576873541813_-896411062",
+      "id": "20161129-010635_572224039",
+      "dateCreated": "2019-12-20 20:25:41.813",
+      "status": "READY",
+      "errorMessage": "",
+      "progressUpdateIntervalMs": 500
+    },
+    {
+      "text": "%pyspark\n\nfrom pyspark.ml import Pipeline\nfrom pyspark.ml.regression import RandomForestRegressor\nfrom pyspark.ml.feature import VectorIndexer\nfrom pyspark.ml.evaluation import RegressionEvaluator\n\n# Load and parse the data file, converting it to a DataFrame.\ndata \u003d spark.read.format(\"libsvm\").load(\"/data/mllib/sample_libsvm_data.txt\")\n\n# Automatically identify categorical features, and index them.\n# Set maxCategories so features with \u003e 4 distinct values are treated as continuous.\nfeatureIndexer \u003d\\\n    VectorIndexer(inputCol\u003d\"features\", outputCol\u003d\"indexedFeatures\", maxCategories\u003d4).fit(data)\n\n# Split the data into training and test sets (30% held out for testing)\n(trainingData, testData) \u003d data.randomSplit([0.7, 0.3])\n\n# Train a RandomForest model.\nrf \u003d RandomForestRegressor(featuresCol\u003d\"indexedFeatures\")\n\n# Chain indexer and forest in a Pipeline\npipeline \u003d Pipeline(stages\u003d[featureIndexer, rf])\n\n# Train model.  This also runs the indexer.\nmodel \u003d pipeline.fit(trainingData)\n\n# Make predictions.\npredictions \u003d model.transform(testData)\n\n# Select example rows to display.\npredictions.select(\"prediction\", \"label\", \"features\").show(5)\n\n# Select (prediction, true label) and compute test error\nevaluator \u003d RegressionEvaluator(\n    labelCol\u003d\"label\", predictionCol\u003d\"prediction\", metricName\u003d\"rmse\")\nrmse \u003d evaluator.evaluate(predictions)\nprint(\"Root Mean Squared Error (RMSE) on test data \u003d %g\" % rmse)\n\nrfModel \u003d model.stages[1]\nprint(rfModel)  # summary only",
+      "user": "anonymous",
+      "dateUpdated": "2019-12-20 20:25:41.813",
+      "config": {
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/python",
+        "results": [
+          {
+            "graph": {
+              "mode": "table",
+              "height": 300.0,
+              "optionOpen": false,
+              "keys": [],
+              "values": [],
+              "groups": [],
+              "scatter": {}
+            }
+          }
+        ],
+        "enabled": true,
+        "editorSetting": {
+          "language": "python"
+        }
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "+----------+-----+--------------------+\n|prediction|label|            features|\n+----------+-----+--------------------+\n|       0.0|  0.0|(692,[98,99,100,1...|\n|      0.15|  0.0|(692,[100,101,102...|\n|      0.05|  0.0|(692,[122,123,148...|\n|       0.0|  0.0|(692,[123,124,125...|\n|       0.0|  0.0|(692,[123,124,125...|\n+----------+-----+--------------------+\nonly showing top 5 rows\n\nRoot Mean Squared Error (RMSE) on test data \u003d 0.0790569\nRandomForestRegressionModel (uid\u003drfr_8c8795c5e5e3) with 20 trees\n"
+          }
+        ]
+      },
+      "apps": [],
+      "jobName": "paragraph_1576873541813_1323777989",
+      "id": "20161129-011540_1646360459",
+      "dateCreated": "2019-12-20 20:25:41.813",
+      "status": "READY",
+      "errorMessage": "",
+      "progressUpdateIntervalMs": 500
+    },
+    {
+      "text": "%md\n\n# Clustering\n\n## K-means",
+      "user": "anonymous",
+      "dateUpdated": "2019-12-20 20:25:41.814",
+      "config": {
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/markdown",
+        "results": [
+          {
+            "graph": {
+              "mode": "table",
+              "height": 300.0,
+              "optionOpen": false,
+              "keys": [],
+              "values": [],
+              "groups": [],
+              "scatter": {}
+            }
+          }
+        ],
+        "enabled": true,
+        "editorSetting": {
+          "language": "markdown",
+          "editOnDblClick": true
+        }
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "HTML",
+            "data": "\u003cdiv class\u003d\"markdown-body\"\u003e\n\u003ch1\u003eClustering\u003c/h1\u003e\n\u003ch2\u003eK-means\u003c/h2\u003e\n\u003c/div\u003e"
+          }
+        ]
+      },
+      "apps": [],
+      "jobName": "paragraph_1576873541814_228733713",
+      "id": "20161129-011600_996178656",
+      "dateCreated": "2019-12-20 20:25:41.814",
+      "status": "READY",
+      "errorMessage": "",
+      "progressUpdateIntervalMs": 500
+    },
+    {
+      "text": "%pyspark\n\nfrom pyspark.ml.clustering import KMeans\n\n# Loads data.\ndataset \u003d spark.read.format(\"libsvm\").load(\"/data/mllib/sample_kmeans_data.txt\")\n\n# Trains a k-means model.\nkmeans \u003d KMeans().setK(2).setSeed(1)\nmodel \u003d kmeans.fit(dataset)\n\n# Evaluate clustering by computing Within Set Sum of Squared Errors.\nwssse \u003d model.computeCost(dataset)\nprint(\"Within Set Sum of Squared Errors \u003d \" + str(wssse))\n\n# Shows the result.\ncenters \u003d model.clusterCenters()\nprint(\"Cluster Centers: \")\nfor center in centers:\n    print(center)\n    ",
+      "user": "anonymous",
+      "dateUpdated": "2019-12-20 20:25:41.814",
+      "config": {
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/python",
+        "results": [
+          {
+            "graph": {
+              "mode": "table",
+              "height": 300.0,
+              "optionOpen": false,
+              "keys": [],
+              "values": [],
+              "groups": [],
+              "scatter": {}
+            }
+          }
+        ],
+        "enabled": true,
+        "editorSetting": {
+          "language": "python"
+        }
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "Within Set Sum of Squared Errors \u003d 0.12\nCluster Centers: \n[ 0.1  0.1  0.1]\n[ 9.1  9.1  9.1]\n"
+          }
+        ]
+      },
+      "apps": [],
+      "jobName": "paragraph_1576873541814_-2013745140",
+      "id": "20161129-014411_927055504",
+      "dateCreated": "2019-12-20 20:25:41.814",
+      "status": "READY",
+      "errorMessage": "",
+      "progressUpdateIntervalMs": 500
+    },
+    {
+      "text": "%md\n\n#Cross-Validation\n",
+      "user": "anonymous",
+      "dateUpdated": "2019-12-20 20:25:41.814",
+      "config": {
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/markdown",
+        "results": [
+          {
+            "graph": {
+              "mode": "table",
+              "height": 300.0,
+              "optionOpen": false,
+              "keys": [],
+              "values": [],
+              "groups": [],
+              "scatter": {}
+            }
+          }
+        ],
+        "enabled": true,
+        "editorSetting": {
+          "language": "markdown",
+          "editOnDblClick": true
+        }
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "HTML",
+            "data": "\u003cdiv class\u003d\"markdown-body\"\u003e\n\u003cp\u003e#Cross-Validation\u003c/p\u003e\n\u003c/div\u003e"
+          }
+        ]
+      },
+      "apps": [],
+      "jobName": "paragraph_1576873541814_997252401",
+      "id": "20161129-014829_2105425566",
+      "dateCreated": "2019-12-20 20:25:41.814",
+      "status": "READY",
+      "errorMessage": "",
+      "progressUpdateIntervalMs": 500
+    },
+    {
+      "text": "%pyspark\n\nfrom pyspark.ml import Pipeline\nfrom pyspark.ml.classification import LogisticRegression\nfrom pyspark.ml.evaluation import BinaryClassificationEvaluator\nfrom pyspark.ml.feature import HashingTF, Tokenizer\nfrom pyspark.ml.tuning import CrossValidator, ParamGridBuilder\n\n# Prepare training documents, which are labeled.\ntraining \u003d spark.createDataFrame([\n    (0, \"a b c d e spark\", 1.0),\n    (1, \"b d\", 0.0),\n    (2, \"spark f g h\", 1.0),\n    (3, \"hadoop mapreduce\", 0.0),\n    (4, \"b spark who\", 1.0),\n    (5, \"g d a y\", 0.0),\n    (6, \"spark fly\", 1.0),\n    (7, \"was mapreduce\", 0.0),\n    (8, \"e spark program\", 1.0),\n    (9, \"a e c l\", 0.0),\n    (10, \"spark compile\", 1.0),\n    (11, \"hadoop software\", 0.0)\n], [\"id\", \"text\", \"label\"])\n\n# Configure an ML pipeline, which consists of tree stages: tokenizer, hashingTF, and lr.\ntokenizer \u003d Tokenizer(inputCol\u003d\"text\", outputCol\u003d\"words\")\nhashingTF \u003d HashingTF(inputCol\u003dtokenizer.getOutputCol(), outputCol\u003d\"features\")\nlr \u003d LogisticRegression(maxIter\u003d10)\npipeline \u003d Pipeline(stages\u003d[tokenizer, hashingTF, lr])\n\n# We now treat the Pipeline as an Estimator, wrapping it in a CrossValidator instance.\n# This will allow us to jointly choose parameters for all Pipeline stages.\n# A CrossValidator requires an Estimator, a set of Estimator ParamMaps, and an Evaluator.\n# We use a ParamGridBuilder to construct a grid of parameters to search over.\n# With 3 values for hashingTF.numFeatures and 2 values for lr.regParam,\n# this grid will have 3 x 2 \u003d 6 parameter settings for CrossValidator to choose from.\nparamGrid \u003d ParamGridBuilder() \\\n    .addGrid(hashingTF.numFeatures, [10, 100, 1000]) \\\n    .addGrid(lr.regParam, [0.1, 0.01]) \\\n    .build()\n\ncrossval \u003d CrossValidator(estimator\u003dpipeline,\n                          estimatorParamMaps\u003dparamGrid,\n                          evaluator\u003dBinaryClassificationEvaluator(),\n                          numFolds\u003d2)  # use 3+ folds in practice\n\n# Run cross-validation, and choose the best set of parameters.\ncvModel \u003d crossval.fit(training)\n\n# Prepare test documents, which are unlabeled.\ntest \u003d spark.createDataFrame([\n    (4, \"spark i j k\"),\n    (5, \"l m n\"),\n    (6, \"mapreduce spark\"),\n    (7, \"apache hadoop\")\n], [\"id\", \"text\"])\n\n# Make predictions on test documents. cvModel uses the best model found (lrModel).\nprediction \u003d cvModel.transform(test)\nselected \u003d prediction.select(\"id\", \"text\", \"probability\", \"prediction\")\nfor row in selected.collect():\n    print(row)",
+      "user": "anonymous",
+      "dateUpdated": "2019-12-20 20:25:41.814",
+      "config": {
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/python",
+        "results": [
+          {
+            "graph": {
+              "mode": "table",
+              "height": 300.0,
+              "optionOpen": false,
+              "keys": [],
+              "values": [],
+              "groups": [],
+              "scatter": {}
+            }
+          }
+        ],
+        "enabled": true,
+        "editorSetting": {
+          "language": "python"
+        }
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "Row(id\u003d4, text\u003du\u0027spark i j k\u0027, probability\u003dDenseVector([0.2661, 0.7339]), prediction\u003d1.0)\nRow(id\u003d5, text\u003du\u0027l m n\u0027, probability\u003dDenseVector([0.9209, 0.0791]), prediction\u003d0.0)\nRow(id\u003d6, text\u003du\u0027mapreduce spark\u0027, probability\u003dDenseVector([0.4429, 0.5571]), prediction\u003d1.0)\nRow(id\u003d7, text\u003du\u0027apache hadoop\u0027, probability\u003dDenseVector([0.8584, 0.1416]), prediction\u003d0.0)\n"
+          }
+        ]
+      },
+      "apps": [],
+      "jobName": "paragraph_1576873541814_1176380527",
+      "id": "20161129-015223_1699705288",
+      "dateCreated": "2019-12-20 20:25:41.814",
+      "status": "READY",
+      "errorMessage": "",
+      "progressUpdateIntervalMs": 500
+    },
+    {
+      "text": "",
+      "user": "anonymous",
+      "dateUpdated": "2019-12-20 20:25:41.815",
+      "config": {
+        "editorSetting": {
+          "language": "scala"
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "results": {},
+        "graph": {
+          "mode": "table",
+          "height": 300.0,
+          "optionOpen": false,
+          "keys": [],
+          "values": [],
+          "groups": [],
+          "scatter": {}
+        },
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "jobName": "paragraph_1576873541814_-1733951472",
+      "id": "20161129-015302_1115287316",
+      "dateCreated": "2019-12-20 20:25:41.815",
+      "status": "READY",
+      "errorMessage": "",
+      "progressUpdateIntervalMs": 500
+    }
+  ],
+  "name": "MLlib-Lab-Session",
+  "id": "2EWPN96GG",
+  "noteParams": {},
+  "noteForms": {},
+  "angularObjects": {
+    "md:shared_process": [],
+    "spark:shared_process": []
+  },
+  "config": {
+    "isZeppelinNotebookCronEnable": false
+  },
+  "info": {}
+}
